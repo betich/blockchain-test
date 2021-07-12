@@ -87,18 +87,31 @@ class Wallet {
         });
         this.privateKey = keypair.privateKey;
         this.publicKey = keypair.publicKey;
+        this.balance = 50;
     }
-    sendMoney(amount, payeePublicKey) {
-        const transaction = new Transaction(amount, this.publicKey, payeePublicKey);
+    sendMoney(amount, payee) {
+        if (amount > this.balance) {
+            return console.log(`unable to process transaction: Amount=${amount}, Balance=${this.balance}`);
+        }
+        const transaction = new Transaction(amount, this.publicKey, payee.publicKey);
         const sign = crypto.createSign('SHA256');
         sign.update(transaction.toString()).end();
         const signature = sign.sign(this.privateKey);
         Chain.instance.addBlock(transaction, this.publicKey, signature);
+        this.balance -= amount;
+        payee.balance += amount;
+        console.log(`transaction complete: Payer=${this.balance}, Payee=${payee.balance}`);
     }
 }
 const bob = new Wallet();
 const alice = new Wallet();
 const john = new Wallet();
-bob.sendMoney(50, alice.publicKey);
-john.sendMoney(30, bob.publicKey);
-alice.sendMoney(40, john.publicKey);
+bob.sendMoney(50, alice);
+console.log('================================================================');
+john.sendMoney(30, bob);
+console.log('================================================================');
+alice.sendMoney(40, john);
+console.log('================================================================');
+bob.sendMoney(50, alice);
+console.log('================================================================');
+console.log(`Bob: ${bob.balance}\nAlice: ${alice.balance}\nJohn: ${john.balance}`);
